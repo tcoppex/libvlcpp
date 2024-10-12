@@ -1038,5 +1038,94 @@ private:
 
 #endif
 
+#if LIBVLC_VERSION_INT >= LIBVLC_VERSION(4, 0, 0, 0)
+class VideoOutput
+{
+public:
+    enum class Engine
+    {
+        Disable         = libvlc_video_engine_disable,
+        OpenGL          = libvlc_video_engine_opengl,
+        OpenGLES2       = libvlc_video_engine_gles2,
+        Direct3D11      = libvlc_video_engine_d3d11,
+        Direct3D9       = libvlc_video_engine_d3d9,
+    };
+
+    struct Callbacks
+    {
+        using report_size_change = void (*)(void *report_opaque, unsigned width, unsigned height);
+
+        virtual bool onSetup(const libvlc_video_setup_device_cfg_t *cfg, libvlc_video_setup_device_info_t *out) = 0;
+        virtual void onCleanup() = 0;
+        virtual void onSetResize(report_size_change resize_cb, void *report_opaque) {} //
+        virtual bool onUpdateOutput(const libvlc_video_render_cfg_t *cfg, libvlc_video_output_cfg_t *out) = 0;
+        virtual void onSwap() = 0;
+        virtual bool onMakeCurrent(bool enter) = 0;
+        virtual void* onGetProcAddress(char const* funcname) = 0;
+        virtual void onFrameMetadata(libvlc_video_metadata_type_t type, const void *metadata) {}
+        virtual bool onSelectPlane(size_t plane, void *output) { return false; } //
+    };
+};
+
+///
+/// \brief C++ Type wrapper for libvlc_video_render_cfg_t
+///
+class VideoRenderConfig : public libvlc_video_render_cfg_t
+{
+};
+
+///
+/// \brief C++ Type wrapper for libvlc_video_render_cfg_t
+///
+class VideoOutputConfig : public libvlc_video_output_cfg_t
+{
+};
+
+// typedef enum libvlc_video_color_primaries_t {
+//     libvlc_video_primaries_BT601_525 = 1,
+//     libvlc_video_primaries_BT601_625 = 2,
+//     libvlc_video_primaries_BT709     = 3,
+//     libvlc_video_primaries_BT2020    = 4,
+//     libvlc_video_primaries_DCI_P3    = 5,
+//     libvlc_video_primaries_BT470_M   = 6,
+// } libvlc_video_color_primaries_t;
+// /**
+//  * Enumeration of the Video color spaces.
+//  */
+// typedef enum libvlc_video_color_space_t {
+//     libvlc_video_colorspace_BT601  = 1,
+//     libvlc_video_colorspace_BT709  = 2,
+//     libvlc_video_colorspace_BT2020 = 3,
+// } libvlc_video_color_space_t;
+// /**
+//  * Enumeration of the Video transfer functions.
+//  */
+// typedef enum libvlc_video_transfer_func_t {
+//     libvlc_video_transfer_func_LINEAR     = 1,
+//     libvlc_video_transfer_func_SRGB       = 2,
+//     libvlc_video_transfer_func_BT470_BG   = 3,
+//     libvlc_video_transfer_func_BT470_M    = 4,
+//     libvlc_video_transfer_func_BT709      = 5,
+//     libvlc_video_transfer_func_PQ         = 6,
+//     libvlc_video_transfer_func_SMPTE_240  = 7,
+//     libvlc_video_transfer_func_HLG        = 8,
+// } libvlc_video_transfer_func_t;
+// typedef struct libvlc_video_frame_hdr10_metadata_t
+// {
+//     /* similar to SMPTE ST 2086 mastering display color volume */
+//     uint16_t RedPrimary[2];
+//     uint16_t GreenPrimary[2];
+//     uint16_t BluePrimary[2];
+//     uint16_t WhitePoint[2];
+//     unsigned int MaxMasteringLuminance;
+//     unsigned int MinMasteringLuminance;
+//     uint16_t MaxContentLightLevel;
+//     uint16_t MaxFrameAverageLightLevel;
+// } libvlc_video_frame_hdr10_metadata_t;
+// typedef enum libvlc_video_metadata_type_t {
+//     libvlc_video_metadata_frame_hdr10, /**< libvlc_video_frame_hdr10_metadata_t */
+// } libvlc_video_metadata_type_t;
+#endif
+
 } // namespace VLC
 #endif

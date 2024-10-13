@@ -53,11 +53,11 @@ constexpr GLuint indices[]{
 
 char const* vertexShaderSrc = R"(
     #version 300 es
-    layout(location = 0) in vec4 position;
+    layout(location = 0) in vec3 position;
     out vec2 vTexCoords;
     void main() {
-        gl_Position = position * 2.0;
-        vTexCoords = position.xy + vec2(0.5);
+        gl_Position = vec4(1.75 * position.xyz, 1.0);
+        vTexCoords = (position.xy + vec2(0.5));
     }
 )";
 
@@ -122,18 +122,12 @@ public:
 
  public:
     bool onSetup(const libvlc_video_setup_device_cfg_t *cfg, libvlc_video_setup_device_info_t *out) final {
-        DEBUG_LOG_FUNCTION();
-
-        // (segfault coredump if run here)
-        // CHECK_GL_ERRORS();
-
         frame_width_ = 0;
         frame_height_ = 0;
         return true;
     }
 
     void onCleanup() final {
-        DEBUG_LOG_FUNCTION();
         if ((frame_width_ > 0) && (frame_height_ > 0)) {
             glDeleteTextures(textures_.size(), textures_.data());
             glDeleteFramebuffers(fbos_.size(), fbos_.data());
@@ -142,8 +136,6 @@ public:
     }
 
     bool onUpdateOutput(const libvlc_video_render_cfg_t *cfg, libvlc_video_output_cfg_t *out) final {
-        CHECK_GL_ERRORS();
-        DEBUG_LOG_FUNCTION();
         if ((frame_width_ != cfg->width) || (frame_height_ != cfg->height)) {
             std::cerr << "Frame size changed: " << cfg->width << " " << cfg->height << std::endl;
         }
@@ -232,6 +224,7 @@ class VLCPlayer {
     : current_media_id_(0)
   {
     instance_ = VLC::Instance(static_cast<int>(args.size()), args.begin());
+
     mediaplayer_ = VLC::MediaPlayer(instance_);
 
     auto &em = mediaplayer_.eventManager();
@@ -466,6 +459,7 @@ int main(int argc, char *argv[]) {
 #endif
 
     glfwWindowHint(GLFW_VISIBLE, GLFW_TRUE);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
     glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_TRUE);
     GLFWwindow* window = glfwCreateWindow(kWidth, kHeight, "OpenGL x VLC", nullptr, nullptr);
     if (!window) {
@@ -533,7 +527,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Create a VLC mini player.
-    VLCPlayer vlc({
+    VLCPlayer *vlc = new VLCPlayer({
         // "-vv",
         "--no-xlib",
         "--video",
@@ -550,11 +544,11 @@ int main(int argc, char *argv[]) {
 
     // Create a custom frame capture and bind it to the VLC player.
     auto frameCapture = new FrameCapture(shared_ctx);
-    vlc.bindOutputCallbacks(frameCapture); //
+    vlc->bindOutputCallbacks(frameCapture); //
 
     // Launch a media.
-    vlc.addMedia((argc > 1) ? argv[1] : kVideoURI);
-    vlc.play();
+    vlc->addMedia((argc > 1) ? argv[1] : kVideoURI);
+    vlc->play();
 
     // Mainloop
     while (!glfwWindowShouldClose(window)) {
@@ -582,20 +576,22 @@ int main(int argc, char *argv[]) {
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
-    vlc.stop();
+    vlc->stop();
+    delete vlc;
     delete frameCapture;
-    DEBUG_LOG();
 
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
     glDeleteBuffers(1, &IBO);
     glDeleteProgram(program);
-    DEBUG_LOG();
 
-    glfwDestroyWindow(shared_ctx);
+    glfwMakeContextCurrent(window);
     glfwDestroyWindow(window);
+
+    glfwMakeContextCurrent(shared_ctx);
+    glfwDestroyWindow(shared_ctx);
+
     glfwTerminate();
-    DEBUG_LOG();
 
     return EXIT_SUCCESS;
 }

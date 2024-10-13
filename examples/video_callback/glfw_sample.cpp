@@ -9,7 +9,6 @@
 #include <array>
 #include <iostream>
 #include <mutex>
-#include <memory>
 #include <initializer_list>
 
 #define USE_OPENGL_COMPATIBLE 1
@@ -40,10 +39,10 @@ constexpr char const* kVideoURI{
 };
 
 constexpr GLfloat vertices[]{
-     0.5f,  0.5f, 0.0f,
-    -0.5f,  0.5f, 0.0f,
-    -0.5f, -0.5f, 0.0f,
-     0.5f, -0.5f, 0.0f
+    0.5f,  0.5f, 0.0f,
+   -0.5f,  0.5f, 0.0f,
+   -0.5f, -0.5f, 0.0f,
+    0.5f, -0.5f, 0.0f
 };
 
 constexpr GLuint indices[]{
@@ -78,21 +77,21 @@ bool checkGLError() {
     GLenum err;
     while ((err = glGetError()) != GL_NO_ERROR) {
         switch (err) {
-            case GL_INVALID_OPERATION:
-                std::cerr << "GL_INVALID_OPERATION: An operation is not allowed in the current state." << std::endl;
-                break;
-            case GL_INVALID_ENUM:
-                std::cerr << "GL_INVALID_ENUM: An unacceptable value is specified for an enumerated argument." << std::endl;
-                break;
-            case GL_INVALID_VALUE:
-                std::cerr << "GL_INVALID_VALUE: A numeric argument is out of range." << std::endl;
-                break;
-            case GL_OUT_OF_MEMORY:
-                std::cerr << "GL_OUT_OF_MEMORY: There is not enough memory left to execute the command." << std::endl;
-                break;
-            default:
-                std::cerr << "Unknown OpenGL error: " << err << std::endl;
-                break;
+        case GL_INVALID_OPERATION:
+            std::cerr << "GL_INVALID_OPERATION: An operation is not allowed in the current state." << std::endl;
+            break;
+        case GL_INVALID_ENUM:
+            std::cerr << "GL_INVALID_ENUM: An unacceptable value is specified for an enumerated argument." << std::endl;
+            break;
+        case GL_INVALID_VALUE:
+            std::cerr << "GL_INVALID_VALUE: A numeric argument is out of range." << std::endl;
+            break;
+        case GL_OUT_OF_MEMORY:
+            std::cerr << "GL_OUT_OF_MEMORY: There is not enough memory left to execute the command." << std::endl;
+            break;
+        default:
+            std::cerr << "Unknown OpenGL error: " << err << std::endl;
+            break;
         }
         return true;
     }
@@ -103,7 +102,7 @@ bool checkGLError() {
 // ----------------------------------------------------------------------------
 
 class FrameCapture : public VLC::VideoOutput::Callbacks {
-public:
+ public:
     FrameCapture(GLFWwindow *shared_ctx)
         : shared_ctx_(shared_ctx)
     {}
@@ -220,86 +219,87 @@ public:
 
 class VLCPlayer {
  public:
-  explicit VLCPlayer(std::initializer_list<const char*> args)
-    : current_media_id_(0)
-  {
-    instance_ = VLC::Instance(static_cast<int>(args.size()), args.begin());
+    explicit VLCPlayer(std::initializer_list<const char*> args)
+        : current_media_id_(0)
+    {
+        instance_ = VLC::Instance(static_cast<int>(args.size()), args.begin());
 
-    mediaplayer_ = VLC::MediaPlayer(instance_);
+        mediaplayer_ = VLC::MediaPlayer(instance_);
 
-    auto &em = mediaplayer_.eventManager();
-    em.onMediaChanged([this](VLC::MediaPtr media_ptr) {
-      std::cerr << " > media changed : " << media_ptr->mrl() << std::endl;
-    });
-    em.onOpening([this]() {
-      std::cerr << " > opening." << std::endl;
-    });
-    em.onBuffering([this](float percent) {
-      std::cerr << " > loading : " << percent << " %" << std::endl;
-    });
-    em.onPlaying([this]() {
-      std::cerr << " > play" << std::endl;
-    });
-    em.onPaused([this]() {
-      std::cerr << " > paused" << std::endl;
-    });
-    em.onStopped([this]() {
-      std::cerr << " > stopped" << std::endl;
-    });
-  }
+        auto &em = mediaplayer_.eventManager();
+        em.onMediaChanged([this](VLC::MediaPtr media_ptr) {
+            std::cerr << " > media changed : " << media_ptr->mrl() << std::endl;
+        });
+        em.onOpening([this]() {
+            std::cerr << " > opening." << std::endl;
+        });
+        em.onBuffering([this](float percent) {
+            std::cerr << " > loading : " << percent << " %" << std::endl;
+        });
+        em.onPlaying([this]() {
+            std::cerr << " > play" << std::endl;
+        });
+        em.onPaused([this]() {
+            std::cerr << " > paused" << std::endl;
+        });
+        em.onStopped([this]() {
+            std::cerr << " > stopped" << std::endl;
+        });
+    }
 
-  /* Add a media to the playlist given its URI. */
-  void addMedia(std::string_view uri) noexcept {
-    auto media = VLC::Media(uri.data(), VLC::Media::FromLocation);
-    // mediaplayer_ = VLC::MediaPlayer(instance_, media); //
+    ~VLCPlayer() {
+        stop();
+    }
 
-    auto &em = media.eventManager();
-    em.onMetaChanged([this](libvlc_meta_t meta) {
-      std::cerr << "\t+ meta changed." << std::endl;
-    });
-    em.onSubItemAdded([this](VLC::MediaPtr media_ptr) {
-      std::cerr << "\t+ subitem added." << std::endl;
-    });
-    em.onDurationChanged([this](int64_t duration) {
-      std::cerr << "\t+ duration :" << duration << std::endl;
-    });
-    em.onParsedChanged([this](VLC::Media::ParsedStatus status) {
-      auto media = currentMedia();
+    void addMedia(std::string_view uri) noexcept {
+        auto media = VLC::Media(uri.data(), VLC::Media::FromLocation);
 
-      if (VLC::Media::Type::Playlist == media.type()) {
-        auto medialist = media.subitems();
+        auto &em = media.eventManager();
+        em.onMetaChanged([this](libvlc_meta_t meta) {
+            std::cerr << "\t+ meta changed." << std::endl;
+        });
+        em.onSubItemAdded([this](VLC::MediaPtr media_ptr) {
+            std::cerr << "\t+ subitem added." << std::endl;
+        });
+        em.onDurationChanged([this](int64_t duration) {
+            std::cerr << "\t+ duration :" << duration << std::endl;
+        });
+        em.onParsedChanged([this](VLC::Media::ParsedStatus status) {
+            auto media = currentMedia();
 
-        medialist->lock();
-        std::cerr << "\t   | subitems count : " << medialist->count() << std::endl;
-        if (medialist->count() > 0) {
-          auto media_ptr = medialist->itemAtIndex(0);
-          mediaplayer_.setMedia(*media_ptr);
-          mediaplayer_.play();
-        }
-        medialist->unlock();
-      }
-    });
-    medias_.push_back( media );
-    media.parseRequest(instance_, VLC::Media::ParseFlags::Network, 0);
-  }
+            if (VLC::Media::Type::Playlist == media.type()) {
+                auto medialist = media.subitems();
+                medialist->lock();
+                std::cerr << "\t   | subitems count : " << medialist->count() << std::endl;
+                if (medialist->count() > 0) {
+                    auto media_ptr = medialist->itemAtIndex(0);
+                    mediaplayer_.setMedia(*media_ptr);
+                    mediaplayer_.play();
+                }
+                medialist->unlock();
+            }
+        });
+        medias_.push_back( media );
+        media.parseRequest(instance_, VLC::Media::ParseFlags::Network, 0);
+    }
 
-  void play() {
-    assert( !medias_.empty() );
+    void play() {
+        assert( !medias_.empty() );
 
-    auto &media = currentMedia();
-    mediaplayer_.setMedia(media);
-    mediaplayer_.play();
-  }
+        auto &media = currentMedia();
+        mediaplayer_.setMedia(media);
+        mediaplayer_.play();
+    }
 
-  void setVolume(int volume) noexcept {
-    mediaplayer_.setVolume(volume);
-  }
+    void setVolume(int volume) noexcept {
+        mediaplayer_.setVolume(volume);
+    }
 
-  void stop() noexcept {
-    mediaplayer_.stopAsync();
-  }
+    void stop() noexcept {
+        mediaplayer_.stopAsync();
+    }
 
-  void bindOutputCallbacks(VLC::VideoOutput::Callbacks *h) {
+    void bindOutputCallbacks(VLC::VideoOutput::Callbacks *h) {
 #if 0
 
     // [WIP] (segfault)
@@ -332,89 +332,88 @@ class VLCPlayer {
 
 #else
 
-    libvlc_video_set_output_callbacks(
-      mediaplayer_,
+        libvlc_video_set_output_callbacks(
+            mediaplayer_,
 
 #if USE_OPENGL_COMPATIBLE
-      libvlc_video_engine_opengl,
+            libvlc_video_engine_opengl,
 #else
-      libvlc_video_engine_gles2,
+            libvlc_video_engine_gles2,
 #endif
 
-      // Setup
-      [](void **data, const libvlc_video_setup_device_cfg_t *cfg, libvlc_video_setup_device_info_t *out) {
-        return ((VLC::VideoOutput::Callbacks*)*data)->onSetup(cfg, out);
-      },
+            // Setup
+            [](void **data, const libvlc_video_setup_device_cfg_t *cfg, libvlc_video_setup_device_info_t *out) {
+                return ((VLC::VideoOutput::Callbacks*)*data)->onSetup(cfg, out);
+            },
 
-      // Cleanup
-      [](void *data) {
-        ((VLC::VideoOutput::Callbacks*)data)->onCleanup();
-      },
+            // Cleanup
+            [](void *data) {
+                ((VLC::VideoOutput::Callbacks*)data)->onCleanup();
+            },
 
-      // setWindow (there is issue when setup)
-      // [](void *data,
-      //    libvlc_video_output_resize_cb report_size_change,
-      //    libvlc_video_output_mouse_move_cb report_mouse_move,
-      //    libvlc_video_output_mouse_press_cb report_mouse_pressed,
-      //    libvlc_video_output_mouse_release_cb report_mouse_released,
-      //    void *report_opaque) {
-      //       ((VLC::VideoOutput::Callbacks*)data)->onSetWindow(
-      //           report_size_change,
-      //           report_mouse_move,
-      //           report_mouse_pressed,
-      //           report_mouse_released,
-      //           report_opaque
-      //       );
-      // },
-      nullptr,
+            // setWindow (there is issue when setup)
+            // [](void *data,
+            //    libvlc_video_output_resize_cb report_size_change,
+            //    libvlc_video_output_mouse_move_cb report_mouse_move,
+            //    libvlc_video_output_mouse_press_cb report_mouse_pressed,
+            //    libvlc_video_output_mouse_release_cb report_mouse_released,
+            //    void *report_opaque) {
+            //       ((VLC::VideoOutput::Callbacks*)data)->onSetWindow(
+            //           report_size_change,
+            //           report_mouse_move,
+            //           report_mouse_pressed,
+            //           report_mouse_released,
+            //           report_opaque
+            //       );
+            // },
+            nullptr,
 
-      // UpdateOutput
-      [](void *data, const libvlc_video_render_cfg_t *cfg, libvlc_video_output_cfg_t *out) {
-        return ((VLC::VideoOutput::Callbacks*)data)->onUpdateOutput(cfg, out);
-      },
+            // UpdateOutput
+            [](void *data, const libvlc_video_render_cfg_t *cfg, libvlc_video_output_cfg_t *out) {
+                return ((VLC::VideoOutput::Callbacks*)data)->onUpdateOutput(cfg, out);
+            },
 
-      // Swap
-      [](void *data) {
-        ((VLC::VideoOutput::Callbacks*)data)->onSwap();
-      },
+            // SwapBuffer
+            [](void *data) {
+                ((VLC::VideoOutput::Callbacks*)data)->onSwap();
+            },
 
-      // MakeCurrent
-      [](void *data, bool current) {
-        return ((VLC::VideoOutput::Callbacks*)data)->onMakeCurrent(current);
-      },
+            // MakeCurrent
+            [](void *data, bool current) {
+                return ((VLC::VideoOutput::Callbacks*)data)->onMakeCurrent(current);
+            },
 
-      // GetProcAddress
-      [](void *data, char const* funcname) {
-        return ((VLC::VideoOutput::Callbacks*)data)->onGetProcAddress(funcname);
-      },
+            // GetProcAddress
+            [](void *data, char const* funcname) {
+                return ((VLC::VideoOutput::Callbacks*)data)->onGetProcAddress(funcname);
+            },
 
-      // Metadata
-      nullptr,
+            // Metadata
+            nullptr,
 
-      // SelectPlane
-      nullptr,
+            // SelectPlane
+            nullptr,
 
-      (void*)&(*h)
-    );
-
+            (void*)&(*h)
+        );
 #endif
-  }
 
-  VLC::Media& currentMedia() {
-    return medias_.at(current_media_id_);
-  }
+    }
+
+    VLC::Media& currentMedia() {
+        return medias_.at(current_media_id_);
+    }
 
  private:
-  VLC::Instance instance_;
-  VLC::MediaPlayer mediaplayer_;
-  std::vector<VLC::Media> medias_;
-  int current_media_id_;
+    VLC::Instance instance_;
+    VLC::MediaPlayer mediaplayer_;
+    std::vector<VLC::Media> medias_;
+    int current_media_id_;
 };
 
 // ----------------------------------------------------------------------------
 
-GLuint createShaderProgram()
-{
+GLuint createShaderProgram() {
     GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertexShader, 1, &vertexShaderSrc, nullptr);
     glCompileShader(vertexShader);
@@ -528,7 +527,6 @@ int main(int argc, char *argv[]) {
 
     // Create a VLC mini player.
     VLCPlayer *vlc = new VLCPlayer({
-        // "-vv",
         "--no-xlib",
         "--video",
         "--audio",
@@ -540,11 +538,12 @@ int main(int argc, char *argv[]) {
         "--network-caching=1000",
         "--fps-fps=60",
         "--quiet",
+        // "-vv",
     });
 
     // Create a custom frame capture and bind it to the VLC player.
     auto frameCapture = new FrameCapture(shared_ctx);
-    vlc->bindOutputCallbacks(frameCapture); //
+    vlc->bindOutputCallbacks(frameCapture);
 
     // Launch a media.
     vlc->addMedia((argc > 1) ? argv[1] : kVideoURI);
@@ -554,6 +553,7 @@ int main(int argc, char *argv[]) {
     while (!glfwWindowShouldClose(window)) {
         glClear(GL_COLOR_BUFFER_BIT);
 
+        // main rendering.
         {
             glUseProgram(program);
             glBindVertexArray(VAO);
@@ -562,8 +562,6 @@ int main(int argc, char *argv[]) {
             if (auto frame_texture_id = frameCapture->getNextFrame(); frame_texture_id > 0) {
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, frame_texture_id);
-                CHECK_GL_ERRORS();
-
                 glUniform1i(glGetUniformLocation(program, "uTexture"), 0);
             }
             glDrawElements(GL_TRIANGLES, std::size(indices), GL_UNSIGNED_INT, 0);
@@ -576,7 +574,6 @@ int main(int argc, char *argv[]) {
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
-    vlc->stop();
     delete vlc;
     delete frameCapture;
 

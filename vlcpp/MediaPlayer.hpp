@@ -67,7 +67,7 @@ private:
 
         VideoOutputSetup,
         VideoOutputCleanup,
-        VideoOutputResize,
+        VideoOutputSetWindow,
         VideoUpdateOutput,
         VideoSwap,
         VideoMakeCurrent,
@@ -1235,7 +1235,7 @@ public:
      * \param cleanup_cb        callback called to clean up user data (or nullptr if not needed)
      *                          Expected prototype is void(void)
      *
-     * \param resize_cb         callback to set the resize callback (or nullptr if not needed)
+     * \param setWindow_cb         callback to set the setWindow callback (or nullptr if not needed)
      *                          Expected prototype is
      *
      * \param update_output_cb  callback to get the rendering format of the host (must not be nullptr)
@@ -1257,12 +1257,22 @@ public:
      *                          Expected prototype is bool(size_t plane, void* output)
      *
      */
-    template <VideoOutput::Engine tEngine, typename SetupCb, typename CleanupCb, typename ResizeCb, typename UpdateOutputCb, typename SwapCb, typename MakeCurrentCb, typename GetProcAddressCb, typename MetadataCb, typename SelectPlaneCb>
-    void setVideoOutputCallbacks(SetupCb&& setup, CleanupCb&& cleanup, ResizeCb&& resize, UpdateOutputCb&& updateOutput, SwapCb&& swap, MakeCurrentCb&& makeCurrent, GetProcAddressCb&& getProcAddress, MetadataCb&& metadata, SelectPlaneCb&& selectPlane)
+    template <VideoOutput::Engine tEngine, typename SetupCb, typename CleanupCb, typename SetWindowCb, typename UpdateOutputCb, typename SwapCb, typename MakeCurrentCb, typename GetProcAddressCb, typename MetadataCb, typename SelectPlaneCb>
+    void setVideoOutputCallbacks(SetupCb&& setup, CleanupCb&& cleanup, SetWindowCb&& setWindow, UpdateOutputCb&& updateOutput, SwapCb&& swap, MakeCurrentCb&& makeCurrent, GetProcAddressCb&& getProcAddress, MetadataCb&& metadata, SelectPlaneCb&& selectPlane)
     {
         static_assert(signature_match_or_nullptr<SetupCb, bool(const libvlc_video_setup_device_cfg_t*, libvlc_video_setup_device_info_t*)>::value, "Mismatched output setup callback signature");
         static_assert(signature_match_or_nullptr<CleanupCb, void(void)>::value, "Mismatched output cleanup callback signature");
-        // static_assert(signature_match_or_nullptr<ResizeCb, void(void*)>::value, "Mismatched output set resize callback signature");
+
+        // [incorrect, source of bug]
+        // static_assert(signature_match_or_nullptr<SetWindowCb,
+        //     void(libvlc_video_output_resize_cb report_size_change,
+        //          libvlc_video_output_mouse_move_cb report_mouse_move,
+        //          libvlc_video_output_mouse_press_cb report_mouse_pressed,
+        //          libvlc_video_output_mouse_release_cb report_mouse_released,
+        //          void *report_opaque )>::value,
+        //     "Mismatched output set window callback signature"
+        // );
+
         static_assert(signature_match<UpdateOutputCb, bool(const libvlc_video_render_cfg_t*, libvlc_video_output_cfg_t*)>::value, "Mismatched update output callback signature");
         static_assert(signature_match<SwapCb, void(void)>::value, "Mismatched swap callback signature");
         static_assert(signature_match<MakeCurrentCb, bool(bool)>::value, "Mismatched makeCurrent callback signature");
@@ -1274,11 +1284,13 @@ public:
             static_assert(signature_match_or_nullptr<MetadataCb, void(libvlc_video_metadata_type_t, const void*)>::value, "Mismatched frame metadata callback signature");
             static_assert(signature_match_or_nullptr<SelectPlaneCb, bool(size_t, void*)>::value, "Mismatched output select plane callback signature");
         }
-        libvlc_video_set_output_callbacks(*this,
+
+        libvlc_video_set_output_callbacks(
+            *this,
             static_cast<libvlc_video_engine_t>(tEngine),
             CallbackWrapper<(unsigned int)CallbackIdx::VideoOutputSetup, libvlc_video_output_setup_cb>::wrap( *m_callbacks, std::forward<SetupCb>( setup ) ),
             CallbackWrapper<(unsigned int)CallbackIdx::VideoOutputCleanup, libvlc_video_output_cleanup_cb>::wrap( *m_callbacks, std::forward<CleanupCb>( cleanup ) ),
-            CallbackWrapper<(unsigned int)CallbackIdx::VideoOutputResize, libvlc_video_output_resize_cb>::wrap( *m_callbacks, std::forward<ResizeCb>( resize ) ),
+            CallbackWrapper<(unsigned int)CallbackIdx::VideoOutputSetWindow, libvlc_video_output_set_window_cb>::wrap( *m_callbacks, std::forward<SetWindowCb>( setWindow ) ),
             CallbackWrapper<(unsigned int)CallbackIdx::VideoUpdateOutput, libvlc_video_update_output_cb>::wrap( *m_callbacks, std::forward<UpdateOutputCb>( updateOutput ) ),
             CallbackWrapper<(unsigned int)CallbackIdx::VideoSwap, libvlc_video_swap_cb>::wrap( *m_callbacks, std::forward<SwapCb>( swap ) ),
             CallbackWrapper<(unsigned int)CallbackIdx::VideoMakeCurrent, libvlc_video_makeCurrent_cb>::wrap( *m_callbacks, std::forward<MakeCurrentCb>( makeCurrent ) ),
@@ -1293,34 +1305,34 @@ public:
     /**
      * Set callbacks and data to render decoded video to a custom OpenGL texture.
      */
-    template <typename SetupCb, typename CleanupCb, typename ResizeCb, typename UpdateOutputCb, typename SwapCb, typename MakeCurrentCb, typename GetProcAddressCb>
-    void setVideoOutputGLCallbacks(SetupCb&& setup, CleanupCb&& cleanup, ResizeCb&& resize, UpdateOutputCb&& updateOutput, SwapCb&& swap, MakeCurrentCb&& makeCurrent, GetProcAddressCb&& getProcAddress)
+    template <typename SetupCb, typename CleanupCb, typename SetWindowCb, typename UpdateOutputCb, typename SwapCb, typename MakeCurrentCb, typename GetProcAddressCb>
+    void setVideoOutputGLCallbacks(SetupCb&& setup, CleanupCb&& cleanup, SetWindowCb&& setWindow, UpdateOutputCb&& updateOutput, SwapCb&& swap, MakeCurrentCb&& makeCurrent, GetProcAddressCb&& getProcAddress)
     {
-        setVideoOutputCallbacks<VideoOutput::Engine::OpenGL>(setup, cleanup, resize, updateOutput, swap, makeCurrent, getProcAddress, nullptr, nullptr);
+        setVideoOutputCallbacks<VideoOutput::Engine::OpenGL>(setup, cleanup, setWindow, updateOutput, swap, makeCurrent, getProcAddress, nullptr, nullptr);
     }
     /**
      * Set callbacks and data to render decoded video to a custom OpenGL ES 2.0 texture.
      */
-    template <typename SetupCb, typename CleanupCb, typename ResizeCb, typename UpdateOutputCb, typename SwapCb, typename MakeCurrentCb, typename GetProcAddressCb>
-    void setVideoOutputGLESCallbacks(SetupCb&& setup, CleanupCb&& cleanup, ResizeCb&& resize, UpdateOutputCb&& updateOutput, SwapCb&& swap, MakeCurrentCb&& makeCurrent, GetProcAddressCb&& getProcAddress)
+    template <typename SetupCb, typename CleanupCb, typename SetWindowCb, typename UpdateOutputCb, typename SwapCb, typename MakeCurrentCb, typename GetProcAddressCb>
+    void setVideoOutputGLESCallbacks(SetupCb&& setup, CleanupCb&& cleanup, SetWindowCb&& setWindow, UpdateOutputCb&& updateOutput, SwapCb&& swap, MakeCurrentCb&& makeCurrent, GetProcAddressCb&& getProcAddress)
     {
-        setVideoOutputCallbacks<VideoOutput::Engine::OpenGLES2>(setup, cleanup, resize, updateOutput, swap, makeCurrent, getProcAddress, nullptr, nullptr);
+        setVideoOutputCallbacks<VideoOutput::Engine::OpenGLES2>(setup, cleanup, setWindow, updateOutput, swap, makeCurrent, getProcAddress, nullptr, nullptr);
     }
     /**
      * Set callbacks and data to render decoded video to a custom Direct3D 11 texture.
      */
-    template <typename SetupCb, typename CleanupCb, typename ResizeCb, typename UpdateOutputCb, typename SwapCb, typename MakeCurrentCb, typename MetadataCb, typename SelectPlaneCb>
-    void setVideoOutputD3D11Callbacks(SetupCb&& setup, CleanupCb&& cleanup, ResizeCb&& resize, UpdateOutputCb&& updateOutput, SwapCb&& swap, MakeCurrentCb&& makeCurrent, MetadataCb&& metdata, SelectPlaneCb&& selectPlane)
+    template <typename SetupCb, typename CleanupCb, typename SetWindowCb, typename UpdateOutputCb, typename SwapCb, typename MakeCurrentCb, typename MetadataCb, typename SelectPlaneCb>
+    void setVideoOutputD3D11Callbacks(SetupCb&& setup, CleanupCb&& cleanup, SetWindowCb&& setWindow, UpdateOutputCb&& updateOutput, SwapCb&& swap, MakeCurrentCb&& makeCurrent, MetadataCb&& metdata, SelectPlaneCb&& selectPlane)
     {
-        setVideoOutputCallbacks<VideoOutput::Engine::Direct3D11>(setup, cleanup, resize, updateOutput, swap, makeCurrent, nullptr, metdata, selectPlane);
+        setVideoOutputCallbacks<VideoOutput::Engine::Direct3D11>(setup, cleanup, setWindow, updateOutput, swap, makeCurrent, nullptr, metdata, selectPlane);
     }
     /**
      * Set callbacks and data to render decoded video to a custom Direct 9 texture.
      */
-    template <typename SetupCb, typename CleanupCb, typename ResizeCb, typename UpdateOutputCb, typename SwapCb, typename MakeCurrentCb>
-    void setVideoOutputD3D9Callbacks(SetupCb&& setup, CleanupCb&& cleanup, ResizeCb&& resize, UpdateOutputCb&& updateOutput, SwapCb&& swap, MakeCurrentCb&& makeCurrent)
+    template <typename SetupCb, typename CleanupCb, typename SetWindowCb, typename UpdateOutputCb, typename SwapCb, typename MakeCurrentCb>
+    void setVideoOutputD3D9Callbacks(SetupCb&& setup, CleanupCb&& cleanup, SetWindowCb&& setWindow, UpdateOutputCb&& updateOutput, SwapCb&& swap, MakeCurrentCb&& makeCurrent)
     {
-        setVideoOutputCallbacks<VideoOutput::Engine::Direct3D9>(setup, cleanup, resize, updateOutput, swap, makeCurrent, nullptr, nullptr, nullptr);
+        setVideoOutputCallbacks<VideoOutput::Engine::Direct3D9>(setup, cleanup, setWindow, updateOutput, swap, makeCurrent, nullptr, nullptr, nullptr);
     }
 #endif
 

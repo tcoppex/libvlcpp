@@ -1057,13 +1057,17 @@ public:
 
         virtual bool onSetup(const libvlc_video_setup_device_cfg_t *cfg, libvlc_video_setup_device_info_t *out) = 0;
         virtual void onCleanup() = 0;
-        virtual void onSetResize(report_size_change resize_cb, void *report_opaque) {} //
+        virtual void onSetWindow(libvlc_video_output_resize_cb report_size_change,
+                                 libvlc_video_output_mouse_move_cb report_mouse_move,
+                                 libvlc_video_output_mouse_press_cb report_mouse_pressed,
+                                 libvlc_video_output_mouse_release_cb report_mouse_released,
+                                 void *report_opaque) {}
         virtual bool onUpdateOutput(const libvlc_video_render_cfg_t *cfg, libvlc_video_output_cfg_t *out) = 0;
         virtual void onSwap() = 0;
         virtual bool onMakeCurrent(bool enter) = 0;
         virtual void* onGetProcAddress(char const* funcname) = 0;
         virtual void onFrameMetadata(libvlc_video_metadata_type_t type, const void *metadata) {}
-        virtual bool onSelectPlane(size_t plane, void *output) { return false; } //
+        virtual bool onSelectPlane(size_t plane, void *output) { return false; }
     };
 };
 

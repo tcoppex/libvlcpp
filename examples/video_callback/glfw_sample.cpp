@@ -300,104 +300,17 @@ class VLCPlayer {
     }
 
     void bindOutputCallbacks(VLC::VideoOutput::Callbacks *h) {
-#if 0
-
-    // [WIP] (segfault)
-    mediaplayer_.setVideoOutputGLCallbacks(
-        [h](const libvlc_video_setup_device_cfg_t *cfg, libvlc_video_setup_device_info_t *out) { return h->onSetup(cfg, out); },
-        [h]() { h->onCleanup(); },
-
-        // [something is wrong with this]
-        // [h](libvlc_video_output_resize_cb report_size_change,
-        //     libvlc_video_output_mouse_move_cb report_mouse_move,
-        //     libvlc_video_output_mouse_press_cb report_mouse_pressed,
-        //     libvlc_video_output_mouse_release_cb report_mouse_released,
-        //     void *report_opaque)
-        // {
-        //     h->onSetWindow(
-        //         report_size_change,
-        //         report_mouse_move,
-        //         report_mouse_pressed,
-        //         report_mouse_released,
-        //         report_opaque
-        //     );
-        // },
-        nullptr,
-
-        [h](const libvlc_video_render_cfg_t *cfg, libvlc_video_output_cfg_t *out) { return h->onUpdateOutput(cfg, out); },
-        [h]() { h->onSwap(); },
-        [h](bool enter) { return h->onMakeCurrent(enter); },
-        [h](char const* funcname) { return h->onGetProcAddress(funcname); }
-    );
-
-#else
-
-        libvlc_video_set_output_callbacks(
-            mediaplayer_,
-
-#if USE_OPENGL_COMPATIBLE
-            libvlc_video_engine_opengl,
-#else
-            libvlc_video_engine_gles2,
-#endif
-
-            // Setup
-            [](void **data, const libvlc_video_setup_device_cfg_t *cfg, libvlc_video_setup_device_info_t *out) {
-                return ((VLC::VideoOutput::Callbacks*)*data)->onSetup(cfg, out);
+        mediaplayer_.setVideoOutputGLCallbacks(
+            [h](const libvlc_video_setup_device_cfg_t *cfg, libvlc_video_setup_device_info_t *out) {
+                return h->onSetup(cfg, out);
             },
-
-            // Cleanup
-            [](void *data) {
-                ((VLC::VideoOutput::Callbacks*)data)->onCleanup();
-            },
-
-            // setWindow (there is issue when setup)
-            // [](void *data,
-            //    libvlc_video_output_resize_cb report_size_change,
-            //    libvlc_video_output_mouse_move_cb report_mouse_move,
-            //    libvlc_video_output_mouse_press_cb report_mouse_pressed,
-            //    libvlc_video_output_mouse_release_cb report_mouse_released,
-            //    void *report_opaque) {
-            //       ((VLC::VideoOutput::Callbacks*)data)->onSetWindow(
-            //           report_size_change,
-            //           report_mouse_move,
-            //           report_mouse_pressed,
-            //           report_mouse_released,
-            //           report_opaque
-            //       );
-            // },
+            [h]() { h->onCleanup(); },
             nullptr,
-
-            // UpdateOutput
-            [](void *data, const libvlc_video_render_cfg_t *cfg, libvlc_video_output_cfg_t *out) {
-                return ((VLC::VideoOutput::Callbacks*)data)->onUpdateOutput(cfg, out);
-            },
-
-            // SwapBuffer
-            [](void *data) {
-                ((VLC::VideoOutput::Callbacks*)data)->onSwap();
-            },
-
-            // MakeCurrent
-            [](void *data, bool current) {
-                return ((VLC::VideoOutput::Callbacks*)data)->onMakeCurrent(current);
-            },
-
-            // GetProcAddress
-            [](void *data, char const* funcname) {
-                return ((VLC::VideoOutput::Callbacks*)data)->onGetProcAddress(funcname);
-            },
-
-            // Metadata
-            nullptr,
-
-            // SelectPlane
-            nullptr,
-
-            (void*)&(*h)
+            [h](const libvlc_video_render_cfg_t *cfg, libvlc_video_output_cfg_t *out) { return h->onUpdateOutput(cfg, out); },
+            [h]() { h->onSwap(); },
+            [h](bool enter) { return h->onMakeCurrent(enter); },
+            [h](char const* funcname) { return h->onGetProcAddress(funcname); }
         );
-#endif
-
     }
 
     VLC::Media& currentMedia() {
@@ -530,7 +443,7 @@ int main(int argc, char *argv[]) {
         "--no-xlib",
         "--video",
         "--audio",
-        "--no-osd",
+        // "--no-osd",
         "--hw-dec",
         ":demux=h264", "--h264-fps=30",
         ":demux=hevc", "--hevc-fps=30",

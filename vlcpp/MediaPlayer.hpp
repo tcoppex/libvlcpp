@@ -1308,7 +1308,17 @@ public:
     template <typename SetupCb, typename CleanupCb, typename SetWindowCb, typename UpdateOutputCb, typename SwapCb, typename MakeCurrentCb, typename GetProcAddressCb>
     void setVideoOutputGLCallbacks(SetupCb&& setup, CleanupCb&& cleanup, SetWindowCb&& setWindow, UpdateOutputCb&& updateOutput, SwapCb&& swap, MakeCurrentCb&& makeCurrent, GetProcAddressCb&& getProcAddress)
     {
-        setVideoOutputCallbacks<VideoOutput::Engine::OpenGL>(setup, cleanup, setWindow, updateOutput, swap, makeCurrent, getProcAddress, nullptr, nullptr);
+        setVideoOutputCallbacks<VideoOutput::Engine::OpenGL>(
+            std::forward<SetupCb>(setup),
+            std::forward<CleanupCb>(cleanup),
+            std::forward<SetWindowCb>(setWindow),
+            std::forward<UpdateOutputCb>(updateOutput),
+            std::forward<SwapCb>(swap),
+            std::forward<MakeCurrentCb>(makeCurrent),
+            std::forward<GetProcAddressCb>(getProcAddress),
+            nullptr,
+            nullptr
+        );
     }
     /**
      * Set callbacks and data to render decoded video to a custom OpenGL ES 2.0 texture.
@@ -1316,7 +1326,17 @@ public:
     template <typename SetupCb, typename CleanupCb, typename SetWindowCb, typename UpdateOutputCb, typename SwapCb, typename MakeCurrentCb, typename GetProcAddressCb>
     void setVideoOutputGLESCallbacks(SetupCb&& setup, CleanupCb&& cleanup, SetWindowCb&& setWindow, UpdateOutputCb&& updateOutput, SwapCb&& swap, MakeCurrentCb&& makeCurrent, GetProcAddressCb&& getProcAddress)
     {
-        setVideoOutputCallbacks<VideoOutput::Engine::OpenGLES2>(setup, cleanup, setWindow, updateOutput, swap, makeCurrent, getProcAddress, nullptr, nullptr);
+        setVideoOutputCallbacks<VideoOutput::Engine::OpenGLES2>(
+            std::forward<SetupCb>(setup),
+            std::forward<CleanupCb>(cleanup),
+            std::forward<SetWindowCb>(setWindow),
+            std::forward<UpdateOutputCb>(updateOutput),
+            std::forward<SwapCb>(swap),
+            std::forward<MakeCurrentCb>(makeCurrent),
+            std::forward<GetProcAddressCb>(getProcAddress),
+            nullptr,
+            nullptr
+        );
     }
     /**
      * Set callbacks and data to render decoded video to a custom Direct3D 11 texture.
@@ -1324,7 +1344,17 @@ public:
     template <typename SetupCb, typename CleanupCb, typename SetWindowCb, typename UpdateOutputCb, typename SwapCb, typename MakeCurrentCb, typename MetadataCb, typename SelectPlaneCb>
     void setVideoOutputD3D11Callbacks(SetupCb&& setup, CleanupCb&& cleanup, SetWindowCb&& setWindow, UpdateOutputCb&& updateOutput, SwapCb&& swap, MakeCurrentCb&& makeCurrent, MetadataCb&& metdata, SelectPlaneCb&& selectPlane)
     {
-        setVideoOutputCallbacks<VideoOutput::Engine::Direct3D11>(setup, cleanup, setWindow, updateOutput, swap, makeCurrent, nullptr, metdata, selectPlane);
+        setVideoOutputCallbacks<VideoOutput::Engine::Direct3D11>(
+            std::forward<SetupCb>(setup),
+            std::forward<CleanupCb>(cleanup),
+            std::forward<SetWindowCb>(setWindow),
+            std::forward<UpdateOutputCb>(updateOutput),
+            std::forward<SwapCb>(swap),
+            std::forward<MakeCurrentCb>(makeCurrent),
+            nullptr,
+            std::forward<MetadataCb>(metdata),
+            std::forward<SelectPlaneCb>(selectPlane)
+        );
     }
     /**
      * Set callbacks and data to render decoded video to a custom Direct 9 texture.
@@ -1332,7 +1362,17 @@ public:
     template <typename SetupCb, typename CleanupCb, typename SetWindowCb, typename UpdateOutputCb, typename SwapCb, typename MakeCurrentCb>
     void setVideoOutputD3D9Callbacks(SetupCb&& setup, CleanupCb&& cleanup, SetWindowCb&& setWindow, UpdateOutputCb&& updateOutput, SwapCb&& swap, MakeCurrentCb&& makeCurrent)
     {
-        setVideoOutputCallbacks<VideoOutput::Engine::Direct3D9>(setup, cleanup, setWindow, updateOutput, swap, makeCurrent, nullptr, nullptr, nullptr);
+        setVideoOutputCallbacks<VideoOutput::Engine::Direct3D9>(
+            std::forward<SetupCb>(setup),
+            std::forward<CleanupCb>(cleanup),
+            std::forward<SetWindowCb>(setWindow),
+            std::forward<UpdateOutputCb>(updateOutput),
+            std::forward<SwapCb>(swap),
+            std::forward<MakeCurrentCb>(makeCurrent),
+            nullptr,
+            nullptr,
+            nullptr
+        );
     }
 #endif
 

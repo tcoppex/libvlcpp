@@ -300,10 +300,9 @@ class VLCPlayer {
     }
 
     void bindOutputCallbacks(VLC::VideoOutput::Callbacks *h) {
+#if USE_OPENGL_COMPATIBLE
         mediaplayer_.setVideoOutputGLCallbacks(
-            [h](const libvlc_video_setup_device_cfg_t *cfg, libvlc_video_setup_device_info_t *out) {
-                return h->onSetup(cfg, out);
-            },
+            [h](const libvlc_video_setup_device_cfg_t *cfg, libvlc_video_setup_device_info_t *out) { return h->onSetup(cfg, out); },
             [h]() { h->onCleanup(); },
             nullptr,
             [h](const libvlc_video_render_cfg_t *cfg, libvlc_video_output_cfg_t *out) { return h->onUpdateOutput(cfg, out); },
@@ -311,6 +310,17 @@ class VLCPlayer {
             [h](bool enter) { return h->onMakeCurrent(enter); },
             [h](char const* funcname) { return h->onGetProcAddress(funcname); }
         );
+#else
+        mediaplayer_.setVideoOutputGLESCallbacks(
+            [h](const libvlc_video_setup_device_cfg_t *cfg, libvlc_video_setup_device_info_t *out) { return h->onSetup(cfg, out); },
+            [h]() { h->onCleanup(); },
+            nullptr,
+            [h](const libvlc_video_render_cfg_t *cfg, libvlc_video_output_cfg_t *out) { return h->onUpdateOutput(cfg, out); },
+            [h]() { h->onSwap(); },
+            [h](bool enter) { return h->onMakeCurrent(enter); },
+            [h](char const* funcname) { return h->onGetProcAddress(funcname); }
+        );
+#endif
     }
 
     VLC::Media& currentMedia() {
